@@ -15,25 +15,16 @@
 using System.IO;
 using System.Windows;
 
-using VideoLibrary;
-
 using Microsoft.Win32;
 using System;
-using System.Threading;
-using System.Windows.Threading;
 
 namespace ChungusVideoDownloader {
     public partial class MainWindow : Window {
-        string finalFilePath = "";
-
         VideoProcessor videoProcessor = new VideoProcessor();
+        string finalFilePath = "";
 
         public MainWindow() {
             InitializeComponent();
-
-            videoProcessor.OnVideoFound += E_OnVideoFound;
-            videoProcessor.OnVideoProcessed += E_OnVideoProcessed;
-
             videoProcessor.SetExtension(Globals.EXTENSION_VIDEO);
         }
 
@@ -54,9 +45,13 @@ namespace ChungusVideoDownloader {
             inputVideoQuality.IsEnabled = _state;
         }
 
-        private void InputButtonProcess_Click(object sender, RoutedEventArgs e) {
+        async private void InputButtonProcess_Click(object _sender, RoutedEventArgs _args) {
             if (!File.Exists("ffmpeg.exe")) {
                 MessageBox.Show("Missing \"ffmpeg.exe\".", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            else if (!File.Exists("ffprobe.exe")) {
+                MessageBox.Show("Missing \"ffprobe.exe\".", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -64,57 +59,66 @@ namespace ChungusVideoDownloader {
                 return;
             }
 
-            int audioIndex = inputAudioQuality.SelectedIndex;
-            if (audioIndex == (int)Globals.AudioQuality.HIGH) {
+            switch (inputAudioQuality.SelectedIndex) {
+            case (int)Globals.AudioQuality.HIGH:
                 videoProcessor.SetAudioQuality(Globals.AUDIO_SAMPLE_RATE_HIGH);
-            }
-            else if (audioIndex == (int)Globals.AudioQuality.MEDIUM) {
+                break;
+            case (int)Globals.AudioQuality.MEDIUM:
                 videoProcessor.SetAudioQuality(Globals.AUDIO_SAMPLE_RATE_MEDIUM);
-            }
-            else if (audioIndex == (int)Globals.AudioQuality.LOW) {
+                break;
+            case (int)Globals.AudioQuality.LOW:
                 videoProcessor.SetAudioQuality(Globals.AUDIO_SAMPLE_RATE_LOW);
+                break;
             }
 
-            int videoIndex = inputVideoQuality.SelectedIndex;
-            if (videoIndex == (int)Globals.VideoQuality.BEST) {
-                videoProcessor.SetVideoQuality("best");
-            }
-            else if (videoIndex == (int)Globals.VideoQuality.UHD) {
-                videoProcessor.SetVideoQuality("3840");
-            }
-            else if (videoIndex == (int)Globals.VideoQuality.SQHD) {
-                videoProcessor.SetVideoQuality("2560");
-            }
-            else if (videoIndex == (int)Globals.VideoQuality.FHD) {
-                videoProcessor.SetVideoQuality("1920");
-            }
-            else if (videoIndex == (int)Globals.VideoQuality.HD) {
-                videoProcessor.SetVideoQuality("1280");
-            }
-            else if (videoIndex == (int)Globals.VideoQuality.SD) {
-                videoProcessor.SetVideoQuality("854");
-            }
-            else if (videoIndex == (int)Globals.VideoQuality.SSD) {
-                videoProcessor.SetVideoQuality("640");
-            }
-            else if (videoIndex == (int)Globals.VideoQuality.SSSD) {
-                videoProcessor.SetVideoQuality("426");
+            switch (inputVideoQuality.SelectedIndex) {
+            case (int)Globals.VideoQuality.BEST:
+                videoProcessor.SetVideoQuality(Globals.VIDEO_RESOLUTION_WIDTH_BEST);
+                break;
+            case (int)Globals.VideoQuality.UHD:
+                videoProcessor.SetVideoQuality(Globals.VIDEO_RESOLUTION_WIDTH_UHD);
+                break;
+            case (int)Globals.VideoQuality.SQHD:
+                videoProcessor.SetVideoQuality(Globals.VIDEO_RESOLUTION_WIDTH_SQHD);
+                break;
+            case (int)Globals.VideoQuality.FHD:
+                videoProcessor.SetVideoQuality(Globals.VIDEO_RESOLUTION_WIDTH_FHD);
+                break;
+            case (int)Globals.VideoQuality.HD:
+                videoProcessor.SetVideoQuality(Globals.VIDEO_RESOLUTION_WIDTH_HD);
+                break;
+            case (int)Globals.VideoQuality.SD:
+                videoProcessor.SetVideoQuality(Globals.VIDEO_RESOLUTION_WIDTH_SD);
+                break;
+            case (int)Globals.VideoQuality.SSD:
+                videoProcessor.SetVideoQuality(Globals.VIDEO_RESOLUTION_WIDTH_SSD);
+                break;
+            case (int)Globals.VideoQuality.SSSD:
+                videoProcessor.SetVideoQuality(Globals.VIDEO_RESOLUTION_WIDTH_SSSD);
+                break;
             }
 
             videoProcessor.SetDownloadPath(finalFilePath);
             videoProcessor.SetStartTime(inputTextBoxStart.Text);
             videoProcessor.SetEndTime(inputTextBoxEnd.Text);
+            videoProcessor.SetExtension(GetExtensionFromRadioSelection());
+
             if ((bool)inputDownloadModeA.IsChecked) { videoProcessor.SetDownloadType(Globals.TYPE_A); }
             else if ((bool)inputDownloadModeV.IsChecked) { videoProcessor.SetDownloadType(Globals.TYPE_V); }
-            else if((bool)inputDownloadModeAV.IsChecked) { videoProcessor.SetDownloadType(Globals.TYPE_AV); }
-
-            SetProcessStatus(Globals.PROCESS_STATE_DOWNLOADING);
+            else if ((bool)inputDownloadModeAV.IsChecked) { videoProcessor.SetDownloadType(Globals.TYPE_AV); }
 
             SetInputState(false);
-            videoProcessor.Download();
+            outputProcessState.Text = Globals.PROCESS_STATE_PROCESSING;
+
+            await videoProcessor.Download();
+            videoProcessor.Process();
+
+            outputProcessState.Text = Globals.PROCESS_STATE_IDLE;
+            SetInputState(true);
+            System.Media.SystemSounds.Exclamation.Play();
         }
 
-        private void InputButtonUsage_Click(object sender, RoutedEventArgs e) {
+        private void InputButtonUsage_Click(object _sender, RoutedEventArgs _args) {
             const string USAGE_TITLE = "Usage";
             const string USAGE_MESSAGE =
                 "1. Paste a YouTube URL in the 'Source' text field.\n" +
@@ -132,7 +136,7 @@ namespace ChungusVideoDownloader {
             MessageBox.Show(USAGE_MESSAGE, USAGE_TITLE, MessageBoxButton.OK,MessageBoxImage.Question);
         }
 
-        private void InputButtonAbout_Click(object sender, RoutedEventArgs e) {
+        private void InputButtonAbout_Click(object _sender, RoutedEventArgs _args) {
             const string ABOUT_TITLE = "About";
             const string ABOUT_MESSAGE =
                 "This program was created as a custom replacement for\n" +
@@ -150,94 +154,78 @@ namespace ChungusVideoDownloader {
             MessageBox.Show(ABOUT_MESSAGE, ABOUT_TITLE, MessageBoxButton.OK,MessageBoxImage.Information);
         }
 
-        private void InputTextBoxURI_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e) {
+        private void InputTextBoxURI_TextChanged(object _sender, System.Windows.Controls.TextChangedEventArgs _args) {
             videoProcessor.SetURL(inputTextBoxURI.Text);
             videoProcessor.FetchVideo();
 
+            inputButtonProcess.IsEnabled = videoProcessor.IsVideoActive() != false;
+
             if (videoProcessor.IsVideoActive()) {
-                inputTextBoxStart.Text = "00:00:00";
+                inputTextBoxStart.Text = Globals.DEFAULT_TIMESTAMP;
                 inputTextBoxEnd.Text = videoProcessor.GetVideoDuration();
                 outputInfoDuration.Text = videoProcessor.GetVideoDuration();
+
+                const int MAX_TITLE_LENGTH = 19;
+                string title = videoProcessor.GetVideoTitle();
+                if (title.Length > MAX_TITLE_LENGTH) {
+                    outputInfoName.Text = $"{title.Substring(0, MAX_TITLE_LENGTH - 3)}...";
+                }
+                else {
+                    outputInfoName.Text = title;
+                }
             }
             else {
-                outputInfoName.Text = "-";
-                outputInfoDuration.Text = "00:00:00";
+                inputTextBoxStart.Text = Globals.DEFAULT_TIMESTAMP;
+                inputTextBoxEnd.Text = Globals.DEFAULT_TIMESTAMP;
+                outputInfoDuration.Text = Globals.DEFAULT_TIMESTAMP;
+                outputInfoName.Text = Globals.DEFAULT_VIDEO_NAME;
             }
         }
 
-        private void InputDownloadModeAV_Click(object sender, RoutedEventArgs e) {
+        private void InputDownloadModeAV_Click(object _sender, RoutedEventArgs _args) {
             outputSettingAudioQuality.IsEnabled = true;
             outputSettingVideoResolution.IsEnabled = true;
-            videoProcessor.SetExtension(GetExtensionFromRadioSelection());
         }
 
-        private void InputDownloadModeA_Click(object sender, RoutedEventArgs e) {
+        private void InputDownloadModeA_Click(object _sender, RoutedEventArgs _args) {
             outputSettingAudioQuality.IsEnabled = true;
             outputSettingVideoResolution.IsEnabled = false;
-            videoProcessor.SetExtension(GetExtensionFromRadioSelection());
         }
 
-        private void InputDownloadModeV_Click(object sender, RoutedEventArgs e) {
+        private void InputDownloadModeV_Click(object _sender, RoutedEventArgs _args) {
             outputSettingAudioQuality.IsEnabled = false;
             outputSettingVideoResolution.IsEnabled = true;
-            videoProcessor.SetExtension(GetExtensionFromRadioSelection());
-        }
-
-        void E_OnVideoFound(object _sender, YouTubeVideo _video) {
-            inputButtonProcess.IsEnabled = _video != null;
-
-            if (_video == null) {
-                return;
-            }
-
-            string title = _video.Title;
-            if (title.Length > 19) {
-                outputInfoName.Text = $"{_video.Title.Substring(0, 16)}...";
-            }
-            else {
-                outputInfoName.Text = _video.Title;
-            }
-        }
-
-        void E_OnVideoProcessed(object _sender, EventArgs _args) {
-            SetProcessStatus(Globals.PROCESS_STATE_IDLE);
-            SetInputState(true);
-            System.Media.SystemSounds.Exclamation.Play();
         }
 
         string GetExtensionFromRadioSelection() {
-            if (inputDownloadModeAV.IsChecked == true || inputDownloadModeV.IsChecked == true) {
+            if (inputDownloadModeA.IsChecked != true) {
                 return Globals.EXTENSION_VIDEO;
             }
-            else if (inputDownloadModeA.IsChecked == true) {
+            else {
                 return Globals.EXTENSION_AUDIO;
             }
-
-            // .mp4 is used as a generic catch-all, just in case.
-            return ".mp4";
         }
 
         bool OpenDownloadDialog() {
-            string ext = GetExtensionFromRadioSelection();
-            string desc = "Files";
             string title = videoProcessor.GetVideoTitle();
-
             foreach (char c in Path.GetInvalidFileNameChars()) {
                 title = title.Replace(c, '_');
             }
 
-            if (ext == Globals.EXTENSION_VIDEO) {
+            string desc = "";
+            string extension = GetExtensionFromRadioSelection();
+            if (extension == Globals.EXTENSION_VIDEO) {
                 desc = "Video Files";
             }
-            else if (ext == Globals.EXTENSION_AUDIO) {
+            else if (extension == Globals.EXTENSION_AUDIO) {
                 desc = "Audio Files";
             }
 
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Title = "Set Download Path";
-            saveFileDialog.Filter = $"{desc} | *{ext}";
+            saveFileDialog.Filter = $"{desc} | *{extension}";
             saveFileDialog.InitialDirectory = System.Environment.GetEnvironmentVariable("USERPROFILE") + "\\Downloads";
-            saveFileDialog.FileName = title + ext;
+            saveFileDialog.FileName = title + extension;
 
             bool? success = saveFileDialog.ShowDialog();
             if (success == true) {
@@ -245,17 +233,6 @@ namespace ChungusVideoDownloader {
                 return true;
             }
             return false;
-        }
-
-        void SetProcessStatus(string _status) {
-            Thread thread = new Thread(() => SetProcessStatusTask(_status));
-            thread.Start();
-        }
-
-        void SetProcessStatusTask(string _status) {
-            Dispatcher.Invoke(() => {
-                outputProcessState.Text = _status;
-            });
         }
     }
 }

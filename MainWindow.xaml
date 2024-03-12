@@ -20,7 +20,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ChungusVideoDownloader"
         mc:Ignorable="d"
-        Title="Chungus YouTube Downloader"
+        Title="Chungus Video Downloader"
         SizeToContent="WidthAndHeight"
         Width="Auto" Height="Auto"
         ResizeMode="NoResize" WindowStartupLocation="CenterScreen" FontFamily="Bahnschrift" Opacity="0.99" Icon="/icon.png">

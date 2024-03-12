@@ -20,17 +20,12 @@ using System.IO;
 using VideoLibrary;
 using YoutubeExplode;
 using YoutubeExplode.Converter;
-using System.Threading;
-using System.Windows.Threading;
+using System.Threading.Tasks;
 
 namespace ChungusVideoDownloader {
     internal class VideoProcessor : Window {
         YouTube youtube = YouTube.Default;
         YouTubeVideo activeVideo = null;
-
-        public event EventHandler<YouTubeVideo> OnVideoFound;
-        public event EventHandler OnVideoDownloaded;
-        public event EventHandler OnVideoProcessed;
 
         string videoUrl = "";
 
@@ -43,15 +38,6 @@ namespace ChungusVideoDownloader {
 
         string videoQuality = "";
         string audioQuality = "";
-
-        public VideoProcessor() {
-            OnVideoDownloaded += E_OnVideoDownloaded;
-        }
-
-        void E_OnVideoDownloaded(object _sender, EventArgs _args) {
-            Thread thread = new Thread(() => ProcessTask());
-            thread.Start();
-        }
 
         public bool IsVideoActive() {
             return activeVideo != null;
@@ -67,33 +53,30 @@ namespace ChungusVideoDownloader {
         public void SetURL(string _url) { videoUrl = _url; }
 
         public void FetchVideo() {
+            activeVideo = null;
+
             try {
                 var video = youtube.GetVideo(videoUrl);
-                OnVideoFound?.Invoke(null, video);
                 activeVideo = video;
-                return;
             }
             catch (Exception _e) {
-                OnVideoFound?.Invoke(null, null);
                 Trace.WriteLine(_e.Message);
             }
-
-            activeVideo = null;
         }
 
         public string GetVideoTitle() {
             if (activeVideo == null) {
-                return "";
+                return Globals.DEFAULT_VIDEO_NAME;
             }
             return activeVideo.Title;
         }
 
         public string GetVideoDuration() {
             if (activeVideo == null) {
-                return "00:00:00";
+                return Globals.DEFAULT_TIMESTAMP;
             }
 
-            int durationSeconds = activeVideo.Info.LengthSeconds ?? default(int);
+            int durationSeconds = activeVideo.Info.LengthSeconds ?? default;
             int durationMinutes = durationSeconds / 60;
             durationSeconds -= durationMinutes * 60;
             int durationHours = durationMinutes / 60;
@@ -106,28 +89,7 @@ namespace ChungusVideoDownloader {
             return _duration < 10 ? $"0{_duration}" : $"{_duration}";
         }
 
-        public string GetPreciseVideoDuration() {
-            var ffprobe = new Process {
-                StartInfo = new ProcessStartInfo {
-                    FileName = "ffprobe.exe",
-                    Arguments = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 -sexagesimal \"{Globals.INTERMEDIATE_FILE + extension}\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    CreateNoWindow = true
-                }
-            };
-            ffprobe.Start();
-
-            string durationProbeResult = "";
-            while (!ffprobe.StandardOutput.EndOfStream) {
-                durationProbeResult = ffprobe.StandardOutput.ReadLine();
-            }
-            durationProbeResult = durationProbeResult.Split('.')[0];
-
-            ffprobe.Close();
-            return durationProbeResult;
-        }
-        string GetVideoResolution() {
+        string GetDownloadedVideoResolution() {
             var ffprobe = new Process {
                 StartInfo = new ProcessStartInfo {
                     FileName = "ffprobe.exe",
@@ -148,41 +110,30 @@ namespace ChungusVideoDownloader {
             return resolution;
         }
 
-        public void Download() {
+        async public Task Download() {
             if (activeVideo == null) {
                 return;
             }
 
-            Thread thread = new Thread(() => DownloadTask());
-            thread.Start();
+            try {
+                PurgeIntermediateFile();
+
+                YoutubeClient client = new YoutubeClient();
+                await client.Videos.DownloadAsync(videoUrl, Globals.INTERMEDIATE_FILE + extension);
+            }
+            catch (Exception _e) {
+                MessageBox.Show(_e.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        async void DownloadTask() {
-            await Dispatcher.Invoke(async () => {
-                try {
-                    PurgeIntermediateFile();
-
-                    YoutubeClient client = new YoutubeClient();
-
-                    var streamInfo = await client.Videos.GetAsync(videoUrl);
-
-                    await client.Videos.DownloadAsync(videoUrl, Globals.INTERMEDIATE_FILE + extension);
-                    OnVideoDownloaded?.Invoke(null, EventArgs.Empty);
-                }
-                catch (Exception _e) {
-                    MessageBox.Show(_e.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            });
-        }
-
-        void ProcessIntermediateFile() {
+        public void Process() {
             if (!File.Exists(Globals.INTERMEDIATE_FILE + extension)) {
                 MessageBox.Show("Intermediate file not found. Aborting.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             try {
-                string startTimeIn = startTime != "" ? startTime : "00:00:00";
+                string startTimeIn = startTime != "" ? startTime : Globals.DEFAULT_TIMESTAMP;
                 string[] startTimeStrings = startTimeIn.Split(':');
                 int[] startTimeInts = new int[startTimeStrings.Length];
 
@@ -196,8 +147,7 @@ namespace ChungusVideoDownloader {
 
                 string startTimeFormatted = $"{startTimeInts[0]}:{startTimeInts[1]}:{startTimeInts[2]}";
 
-                var durationResult = GetPreciseVideoDuration();
-                string endTimeIn = endTime == "" ? durationResult : endTime;
+                string endTimeIn = endTime == "" ? GetVideoDuration() : endTime;
                 string[] endTimeStrings = endTimeIn.Split(':');
                 int[] endTimeInts = new int[endTimeStrings.Length];
 
@@ -215,13 +165,15 @@ namespace ChungusVideoDownloader {
                 }
                 string duration = $"{durations[0]}:{durations[1]}:{durations[2]}";
 
-                string audioQualityParam = $"-ar {audioQuality}";
 
+                string audioQualityParam = $"-ar {audioQuality}";
                 string videoQualityParam = "";
                 string copyParam = "";
+                string videoOnlyParam = "";
+
                 if (extension != Globals.EXTENSION_AUDIO) {
                     if (videoQuality != "best") {
-                        string width = GetVideoResolution().Split('x')[0];
+                        string width = GetDownloadedVideoResolution().Split('x')[0];
                         int currentWidthInt = int.Parse(width);
                         int targetWidthInt = int.Parse(videoQuality);
                         string setWidth = currentWidthInt > targetWidthInt ? videoQuality : width;
@@ -229,7 +181,7 @@ namespace ChungusVideoDownloader {
                         videoQualityParam = $"-vf scale={setWidth}:-2,setsar=1:1 -c:v libx264";
                     }
                     else {
-                        string width = GetVideoResolution().Split('x')[0];
+                        string width = GetDownloadedVideoResolution().Split('x')[0];
                         videoQualityParam = $"-vf scale={width}:-2,setsar=1:1 -c:v libx264";
                     }
                 }
@@ -237,13 +189,12 @@ namespace ChungusVideoDownloader {
                     copyParam = "-c copy";
                 }
 
-                string videoOnlyParam = "";
                 if (type == Globals.TYPE_V) {
                     videoOnlyParam = "-an";
                 }
 
                 string args = "";
-                if (extension != Globals.EXTENSION_AUDIO) {
+                if (type != Globals.TYPE_A) {
                     args = $"-y -ss {startTimeFormatted} -i \"{Globals.INTERMEDIATE_FILE + extension}\" -t {duration} {audioQualityParam} {videoQualityParam} {videoOnlyParam} {copyParam} \"{downloadPath}\"";
                 }
                 else {
@@ -262,19 +213,12 @@ namespace ChungusVideoDownloader {
                 };
                 ffmpeg.Start();
 
-                ffmpeg.WaitForExit();
+                ffmpeg.WaitForExit(); // This causes the UI to become blocked. I might want to revisit this, but it works for now.
                 PurgeIntermediateFile();
             }
             catch (Exception _e) {
                 MessageBox.Show(_e.Message, "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        void ProcessTask() {
-            Dispatcher.Invoke(() => {
-                ProcessIntermediateFile();
-                OnVideoProcessed?.Invoke(null, EventArgs.Empty);
-            });
         }
 
         void PurgeIntermediateFile() {

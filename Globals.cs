@@ -23,11 +23,23 @@ namespace ChungusVideoDownloader {
         public const string TYPE_AV = "AV";
 
         public const string PROCESS_STATE_IDLE = "IDLE";
-        public const string PROCESS_STATE_DOWNLOADING = "PROCESSING";
+        public const string PROCESS_STATE_PROCESSING = "PROCESSING";
 
         public const string AUDIO_SAMPLE_RATE_HIGH = "48000";
         public const string AUDIO_SAMPLE_RATE_MEDIUM = "32000";
         public const string AUDIO_SAMPLE_RATE_LOW = "22050";
+
+        public const string VIDEO_RESOLUTION_WIDTH_BEST = "best";
+        public const string VIDEO_RESOLUTION_WIDTH_UHD = "3840";
+        public const string VIDEO_RESOLUTION_WIDTH_SQHD = "2560";
+        public const string VIDEO_RESOLUTION_WIDTH_FHD = "1920";
+        public const string VIDEO_RESOLUTION_WIDTH_HD = "1280";
+        public const string VIDEO_RESOLUTION_WIDTH_SD = "854";
+        public const string VIDEO_RESOLUTION_WIDTH_SSD = "640";
+        public const string VIDEO_RESOLUTION_WIDTH_SSSD = "426";
+
+        public const string DEFAULT_TIMESTAMP = "00:00:00";
+        public const string DEFAULT_VIDEO_NAME = "-";
 
         public enum AudioQuality {
             HIGH,
