@@ -12,11 +12,10 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
+using System;
 using System.IO;
 using System.Windows;
-
 using Microsoft.Win32;
-using System;
 
 namespace ChungusVideoDownloader {
     public partial class MainWindow : Window {

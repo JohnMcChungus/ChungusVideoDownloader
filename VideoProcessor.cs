@@ -13,14 +13,14 @@
 // GNU General Public License for more details.
 
 using System;
-using System.Diagnostics;
-using System.Windows;
 using System.IO;
+using System.Windows;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 using VideoLibrary;
 using YoutubeExplode;
 using YoutubeExplode.Converter;
-using System.Threading.Tasks;
 
 namespace ChungusVideoDownloader {
     internal class VideoProcessor : Window {
