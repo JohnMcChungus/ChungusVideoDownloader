@@ -1,0 +1,235 @@
+﻿<!--
+    ChungusVideoDownloader downloads YouTube videos.
+    Copyright (C) 2024 Alex Archambault
+    
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+-->
+    
+<Window x:Class="ChungusVideoDownloader.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ChungusVideoDownloader"
+        mc:Ignorable="d"
+        Title="Chungus YouTube Downloader"
+        SizeToContent="WidthAndHeight"
+        Width="Auto" Height="Auto"
+        ResizeMode="NoResize" WindowStartupLocation="CenterScreen" FontFamily="Bahnschrift" Opacity="0.99" Icon="/icon.png">
+
+    <Grid Background="White">
+        <!--SOURCE PANEL-->
+        <Border Width="400" Height="106" Margin="4"
+                Background="WhiteSmoke" BorderBrush="Gainsboro" BorderThickness="1"
+                HorizontalAlignment="Center" VerticalAlignment="Top"
+                SnapsToDevicePixels="True"/>
+        
+        <TextBlock FontWeight="Light" FontSize="10" Margin="8,8,0,0"
+                   HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="0.5">
+            *optional
+        </TextBlock>
+
+        <!--SOURCE URL-->
+        <StackPanel Margin="0,8,0,0"
+                    HorizontalAlignment="Center" VerticalAlignment="Top">
+            <TextBlock FontSize="14" FontWeight="DemiBold"
+                       HorizontalAlignment="Center">
+                Source
+            </TextBlock>
+            <TextBlock FontSize="10" FontWeight="Light"
+                       HorizontalAlignment="Center" Opacity="0.5">
+                (ex: https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+            </TextBlock>
+            <TextBox Height="18" Width="392"
+                     FontFamily="Consolas"
+                     Name="inputTextBoxURI" TextChanged="InputTextBoxURI_TextChanged"/>
+        </StackPanel>
+
+        <!--START TIME-->
+        <StackPanel Margin="-160,60,0,0"
+                    HorizontalAlignment="Center" VerticalAlignment="Top">
+            <TextBlock FontSize="14" FontWeight="DemiBold"
+                       HorizontalAlignment="Center">
+                Start*
+            </TextBlock>
+            <TextBlock FontSize="10" FontWeight="Light"
+                       HorizontalAlignment="Center" Opacity="0.5">
+                (HH:MM:SS)
+            </TextBlock>
+            <TextBox Name="inputTextBoxStart"
+                     Width="100" Height="18"
+                     FontFamily="Consolas"
+                     TextAlignment="Center">
+                00:00:00
+            </TextBox>
+        </StackPanel>
+
+        <!--END TIME-->
+        <StackPanel Margin="160,60,0,0"
+                    HorizontalAlignment="Center" VerticalAlignment="Top">
+            <TextBlock FontSize="14" FontWeight="DemiBold"
+                       HorizontalAlignment="Center">
+                End*
+            </TextBlock>
+            <TextBlock FontSize="10" FontWeight="Light"
+                       HorizontalAlignment="Center" Opacity="0.5">
+                (HH:MM:SS)
+            </TextBlock>
+            <TextBox Width="100" Height="18"
+                     TextAlignment="Center"
+                     FontFamily="Consolas"
+                     Name="inputTextBoxEnd">
+                00:00:00
+            </TextBox>
+        </StackPanel>
+
+        <!--SETTINGS PANEL-->
+        <Border Width="400" Height="162" Margin="4,114,4,4"
+                Background="WhiteSmoke" BorderBrush="Gainsboro" BorderThickness="1"
+                HorizontalAlignment="Center" VerticalAlignment="Top"
+                SnapsToDevicePixels="True"/>
+        
+        <!--DOWNLOAD MODE-->
+        <StackPanel Margin="8,119,0,0"
+                    HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock Margin="0,-2,0,0"
+                       FontSize="14" FontWeight="DemiBold"
+                       HorizontalAlignment="Center">
+                Download Mode
+            </TextBlock>
+            <RadioButton Margin="0,2,0,0"
+                         Name="inputDownloadModeAV" Click="InputDownloadModeAV_Click"
+                         IsChecked="True">
+                Audio &amp; Video
+            </RadioButton>
+            <RadioButton
+                Name="inputDownloadModeA" Click="InputDownloadModeA_Click">
+                Audio Only
+            </RadioButton>
+            <RadioButton
+                Name="inputDownloadModeV" Click="InputDownloadModeV_Click">
+                Video Only
+            </RadioButton>
+        </StackPanel>
+
+        <!--INFO GRID-->
+        <StackPanel Margin="8,0,0,44"
+                    HorizontalAlignment="Left" VerticalAlignment="Bottom">
+            <Border Width="167" Height="14"
+                Background="WhiteSmoke" BorderBrush="Gainsboro" BorderThickness="1"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                SnapsToDevicePixels="True"/>
+            <Border Width="167" Height="14"
+                Background="WhiteSmoke" BorderBrush="Gainsboro" BorderThickness="1"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                SnapsToDevicePixels="True"/>
+        </StackPanel>
+
+        <!--INFO-->
+        <StackPanel Margin="34,0,0,43"
+                    HorizontalAlignment="Left" VerticalAlignment="Bottom">
+            <TextBlock Margin="-2,-2,0,0"
+                       FontSize="14" FontWeight="DemiBold">
+                YouTube Video Info
+            </TextBlock>
+            <TextBlock Margin="-24,0,0,0">
+                Name:
+            </TextBlock>
+            <TextBlock Margin="-24,0,0,0">
+                Duration:
+            </TextBlock>
+        </StackPanel>
+        <StackPanel Margin="10,0,0,43"
+                    HorizontalAlignment="Left" VerticalAlignment="Bottom">
+            <TextBlock Margin="36,0,0,0"
+                       FontFamily="Consolas"
+                       Name="outputInfoName">
+                -
+            </TextBlock>
+            <TextBlock Margin="52,0,0,0"
+                       FontFamily="Consolas"
+                       Name="outputInfoDuration">
+                00:00:00
+            </TextBlock>
+        </StackPanel>
+
+        <!--AUDIO QUALITY-->
+        <StackPanel Margin="0,119,142,0"
+            HorizontalAlignment="Right" VerticalAlignment="Top"
+            Name="outputSettingAudioQuality">
+            <TextBlock Margin="0,-2,0,0"
+                       FontSize="14" FontWeight="DemiBold"
+                       HorizontalAlignment="Center">
+                Audio Quality
+            </TextBlock>
+            <ListBox Width="88" Height="136"
+                     Margin="0,2,0,0"
+                     Name="inputAudioQuality">
+                <ListBoxItem IsSelected="True">High</ListBoxItem>
+                <ListBoxItem>Medium</ListBoxItem>
+                <ListBoxItem>Low</ListBoxItem>
+            </ListBox>
+        </StackPanel>
+
+        <!--TARGET RESOLUTION-->
+        <StackPanel Margin="0,119,8,0"
+                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Name="outputSettingVideoResolution">
+            <TextBlock Margin="0,-2,0,0"
+                       FontSize="14" FontWeight="DemiBold"
+                       HorizontalAlignment="Center">
+                Target Resolution
+            </TextBlock>
+            <ListBox Width="130" Height="136"
+                     Margin="0,2,0,0"
+                     Name="inputVideoQuality">
+                <ListBoxItem IsSelected="True">Best Available</ListBoxItem>
+                <ListBoxItem>4K</ListBoxItem>
+                <ListBoxItem>1440p</ListBoxItem>
+                <ListBoxItem>1080p</ListBoxItem>
+                <ListBoxItem>720p</ListBoxItem>
+                <ListBoxItem>480p</ListBoxItem>
+                <ListBoxItem>360p</ListBoxItem>
+                <ListBoxItem>240p</ListBoxItem>
+            </ListBox>
+        </StackPanel>
+
+        <!--PROCESS PANEL-->
+        <Border Width="400" Height="32" Margin="4,280,4,4"
+                Background="WhiteSmoke" BorderBrush="Gainsboro" BorderThickness="1"
+                HorizontalAlignment="Center" VerticalAlignment="Top"
+                SnapsToDevicePixels="True"/>
+
+        <Button Width="60" Height="24" Margin="0,0,8,8"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Name="inputButtonProcess" Click="InputButtonProcess_Click"
+                IsEnabled="False">
+            Process
+        </Button>
+        <Button Width="46" Height="24" Margin="8,0,0,8"
+                HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                Name="inputButtonUsage" Click="InputButtonUsage_Click">
+            Usage
+        </Button>
+        <Button Width="46" Height="24" Margin="58,0,0,8"
+                HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                Name="inputButtonAbout" Click="InputButtonAbout_Click">
+            About
+        </Button>
+
+        <TextBlock Margin="0,0,0,10"
+                   HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                   FontSize="14" FontWeight="DemiBold"
+                   Name="outputProcessState">
+            IDLE
+        </TextBlock>
+    </Grid>
+</Window>
