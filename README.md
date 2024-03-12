@@ -9,15 +9,3 @@ CVD requires 'ffmpeg.exe' and 'ffprobe.exe'. It seems that these must be in the 
 - CVD can also trim the downloaded video to whatever length you need, and remove the audio or video tracks if so desired.
 
 It occurs to me that CVD is an acronym for a medical condition, but I'm okay with that.
-
-Copyright (C) 2024 Alex Archambault
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
